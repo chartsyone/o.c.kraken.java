@@ -3,7 +3,7 @@
 This library unmarshalls JSON responses into the Java objects (e.g. Trade, Quote,...).
 A wide collection of Java support objects is provided in this library, designed to be API-agnostic and preferably support additional exchanges in the future.
 
-This project is an early work in progress. Once completed it's planned to be integrated with the Chartsy|One platform.
+This project is an early work in progress. Once completed it's planned to be integrated with the [Chartsy|One](https://www.chartsy.one) platform.
 Currently only public API methods are supported.
 
 ## Roadmap
