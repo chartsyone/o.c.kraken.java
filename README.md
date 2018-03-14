@@ -16,14 +16,14 @@ Currently only public API methods are supported.
 - Apache Http Components Client
 
 ## Example usage
-### Basics
-Kraken API methods are available through the KrakenService object, which can be instantiated using a simple constructor:
+### 1. Basics
+Kraken API methods are available through the KrakenService object, which can be instantiated using a static factory method:
 
 ```java
-    KrakenService service = new KrakenService();
+    KrakenService service = KrakenService.getInstance();
 ```
 
-### Loading hourly OHLC data:
+### 2. Loading hourly OHLC data:
 
 ```java
     Quotes quotes = service.getQuotes(new Symbol("XBTUSD"), TimeFrame.Period.H1);
@@ -40,7 +40,7 @@ The library supports a basic set of technical and statistical indicators. For ex
     System.out.println("Current ATR Value = " + atr.get(0));
 ```
 
-### Downloading all historical ticks to a CSV file:
+### 3. Downloading all historical ticks to a CSV file:
 
 ```java
     KrakenService service = KrakenService.getDefault();
