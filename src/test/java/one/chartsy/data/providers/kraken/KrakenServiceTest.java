@@ -13,8 +13,13 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.ResponseDefinitionBuilder;
 import com.github.tomakehurst.wiremock.core.WireMockConfiguration;
 
+import one.chartsy.Symbol;
+import one.chartsy.SymbolNotFoundException;
+import one.chartsy.TimeFrame;
+
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 
 public class KrakenServiceTest {
@@ -51,7 +56,7 @@ public class KrakenServiceTest {
     
     @Test
     void getServerTime_gives_actual_time_on_server() throws Exception {
-        ZonedDateTime actualTime = ZonedDateTime.of( //from Time.json
+        final ZonedDateTime ACTUAL_TIME = ZonedDateTime.of( // from Time.json
                 LocalDateTime.of(2019, 6, 10, 20, 31, 5), ZoneOffset.UTC);
         
         givenThat(get(urlEqualTo("/public/Time")).willReturn(aJsonResponse()
@@ -59,7 +64,38 @@ public class KrakenServiceTest {
         ));
         
         ZonedDateTime serverTime = service.getServerTime();
-        assertEquals(actualTime, serverTime,
+        assertEquals(ACTUAL_TIME, serverTime,
                 "<SERVER TIME> differs from expected <ACTUAL TIME>");
+    }
+    
+    @Test
+    void getBaseTimeFrame_gives_minute_resolution_for_any_symbol() {
+        final TimeFrame MINUTE_RESOLUTION = TimeFrame.Period.M1;
+        final Symbol ANY_SYMBOL = new Symbol("<Any Symbol>");
+        
+        TimeFrame baseTimeFrame = service.getBaseTimeFrame(ANY_SYMBOL);
+        assertEquals(MINUTE_RESOLUTION, baseTimeFrame);
+    }
+
+    private static void givenAvailableAssetPairs() {
+        givenThat(get(urlEqualTo("/public/AssetPairs")).willReturn(aJsonResponse()
+                .withBodyFile("public/AssetPairs.json")
+        ));
+    }
+    
+    @Test
+    void getSymbol_gives_available_symbol() throws IOException, InterruptedException {
+        givenAvailableAssetPairs();
+        
+        Symbol symbol = service.getSymbol("XXBTZUSD");
+        assertEquals("XXBTZUSD", symbol.getRefIdAsString(), "symbol.refId");
+        assertEquals("XBTUSD", symbol.getName(), "symbol.name");
+    }
+    
+    @Test
+    void getSymbol_throws_SymbolNotFoundException_for_unavailable_symbol() throws IOException, InterruptedException {
+        givenAvailableAssetPairs();
+        
+        assertThrows(SymbolNotFoundException.class, () -> service.getSymbol("<Unavailable Symbol>"));
     }
 }
