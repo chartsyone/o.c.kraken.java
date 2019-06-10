@@ -175,7 +175,7 @@ public class KrakenService implements Closeable {
         }
     }
 
-    private static final Map<String, CurrencyUnit> currencyUnits = Collections.synchronizedMap(new HashMap<>());
+    private final Map<String, CurrencyUnit> currencyUnits = Collections.synchronizedMap(new HashMap<>());
 
     final CurrencyUnit findCurrencyUnit(String apiCode) throws IOException {
         if (currencyUnits.isEmpty()) {
@@ -230,7 +230,7 @@ public class KrakenService implements Closeable {
     }
 
     /** Contains the map of tradeable symbols. */
-    private static final Map<Serializable, SymbolInformation> symbolInformation = new HashMap<>();
+    private final Map<Serializable, SymbolInformation> symbolInformation = new HashMap<>();
 
     private void loadSymbolInformation() throws IOException {
         synchronized (KrakenService.class) {
