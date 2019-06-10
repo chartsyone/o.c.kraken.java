@@ -69,8 +69,10 @@ import one.chartsy.time.Chronological;
  *
  */
 public class KrakenService implements Closeable {
-    /** The API url. */
+    /** The API Endpoint Url. */
     private static final String API_URL = "https://api.kraken.com/0/";
+    /** The API Endpoint url currently in use. */
+    private final String apiEndpoint;
     /** The http client used for all REST API calls. */
     private final CloseableHttpClient httpClient;
     /** The JSON parser used for unmarshalling responses from the REST API. */
@@ -79,11 +81,15 @@ public class KrakenService implements Closeable {
     private final Throttler throttler = new Throttler();
 
 
-    public KrakenService() {
-        this(HttpClientBuilder.create().build());
+    public KrakenService(String apiEndpoint) {
+        this(apiEndpoint, HttpClientBuilder.create().build());
     }
 
-    private KrakenService(CloseableHttpClient httpClient) {
+    private KrakenService(String apiEndpoint, CloseableHttpClient httpClient) {
+        if (!apiEndpoint.endsWith("/"))
+            apiEndpoint += "/";
+
+        this.apiEndpoint = apiEndpoint;
         this.httpClient = httpClient;
     }
 
@@ -136,7 +142,7 @@ public class KrakenService implements Closeable {
      * @return the server date and time (UTC)
      */
     public ZonedDateTime getServerTime() throws IOException, KrakenServiceException {
-        return queryPublic(new HttpGet(API_URL + "public/Time"), KRKTimeResult.class,
+        return queryPublic(new HttpGet(apiEndpoint + "public/Time"), KRKTimeResult.class,
                 KRKTimeResult::getAsDateTime);
     }
 
@@ -174,7 +180,7 @@ public class KrakenService implements Closeable {
     final CurrencyUnit findCurrencyUnit(String apiCode) throws IOException {
         if (currencyUnits.isEmpty()) {
             // Load assets from the API
-            Map<String, CurrencyUnit> resultMap = queryPublic(new HttpGet(API_URL + "public/Assets"),
+            Map<String, CurrencyUnit> resultMap = queryPublic(new HttpGet(apiEndpoint + "public/Assets"),
                     KRKAssetResult.class, KRKAssetResult::getAsCurrencyMap);
             synchronized (currencyUnits) {
                 if (currencyUnits.isEmpty())
@@ -229,7 +235,7 @@ public class KrakenService implements Closeable {
     private void loadSymbolInformation() throws IOException {
         synchronized (KrakenService.class) {
             if (symbolInformation.isEmpty()) {
-                List<SymbolInformation> list = queryPublic(new HttpGet(API_URL + "public/AssetPairs"),
+                List<SymbolInformation> list = queryPublic(new HttpGet(apiEndpoint + "public/AssetPairs"),
                         KRKAssetPairsResult.class, KRKAssetPairsResult::getAsSymbolInformationList);
                 for (SymbolInformation info : list)
                     symbolInformation.put(info.getRefId(), info);
@@ -264,7 +270,7 @@ public class KrakenService implements Closeable {
     }
 
     public List<Level1Snapshot> getLevel1Snapshot(List<Symbol> symbols) throws IOException, KrakenServiceException {
-        HttpGet request = new HttpGet(API_URL + "public/Ticker?pair=" + urlEncode(symbols));
+        HttpGet request = new HttpGet(apiEndpoint + "public/Ticker?pair=" + urlEncode(symbols));
         CloseableHttpResponse response = acquireHttpClientPermit().execute(request);
         try (Reader in = new InputStreamReader(response.getEntity().getContent())) {
             long serverTime = 1_000_000 * getServerTimeFromHeader(response);
@@ -287,7 +293,7 @@ public class KrakenService implements Closeable {
      *             if an I/O error occurred while executing the method
      */
     public Level2Snapshot getLevel2Snapshot(Symbol symbol) throws IOException {
-        HttpGet request = new HttpGet(API_URL + "public/Depth?pair=" + urlEncode(symbol));
+        HttpGet request = new HttpGet(apiEndpoint + "public/Depth?pair=" + urlEncode(symbol));
         CloseableHttpResponse response = acquireHttpClientPermit().execute(request);
         try (Reader in = new InputStreamReader(response.getEntity().getContent())) {
             long serverTime = 1_000_000 * getServerTimeFromHeader(response);
@@ -761,7 +767,7 @@ public class KrakenService implements Closeable {
         static synchronized KrakenService getSharedInstance() {
             KrakenService instance = INSTANCE.get();
             if (instance == null) {
-                INSTANCE = new ServiceRef(instance = new KrakenService(), REF_QUEUE);
+                INSTANCE = new ServiceRef(instance = new KrakenService(API_URL), REF_QUEUE);
                 new GCFinalizer().start();
             }
             return instance;
