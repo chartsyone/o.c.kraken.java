@@ -1,6 +1,7 @@
 package one.chartsy.data.providers.kraken;
 
 import java.io.IOException;
+import java.net.ConnectException;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
@@ -71,7 +72,7 @@ public class KrakenServiceTest {
     @Test
     void getBaseTimeFrame_gives_minute_resolution_for_any_symbol() {
         final TimeFrame MINUTE_RESOLUTION = TimeFrame.Period.M1;
-        final Symbol ANY_SYMBOL = new Symbol("<Any Symbol>");
+        final Symbol ANY_SYMBOL = new Symbol("<any symbol>");
         
         TimeFrame baseTimeFrame = service.getBaseTimeFrame(ANY_SYMBOL);
         assertEquals(MINUTE_RESOLUTION, baseTimeFrame);
@@ -93,9 +94,23 @@ public class KrakenServiceTest {
     }
     
     @Test
-    void getSymbol_throws_SymbolNotFoundException_for_unavailable_symbol() throws IOException, InterruptedException {
+    void getSymbol_throws_SymbolNotFoundException_for_unavailable_symbol() {
         givenAvailableAssetPairs();
         
         assertThrows(SymbolNotFoundException.class, () -> service.getSymbol("<Unavailable Symbol>"));
+    }
+
+    private void givenUnavailableApiEndpoint() {
+        mockServer.stop();
+    }
+    
+    @Test
+    void throws_ConnectException_when_api_not_available() throws IOException {
+        givenUnavailableApiEndpoint();
+        
+        String any = "<any>";
+        assertThrows(ConnectException.class, () -> service.getServerTime());
+        assertThrows(ConnectException.class, () -> service.getSymbol(any));
+        assertThrows(ConnectException.class, () -> service.getSymbolInformation(any));
     }
 }
