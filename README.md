@@ -9,6 +9,7 @@ Currently only public API methods are supported.
 ## Roadmap
 - Publish unit and integration tests.
 - Implement Private API methods.
+- AI assisted trading.
 
 ## Project dependencies
 
